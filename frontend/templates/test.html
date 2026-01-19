@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试页面 - Raymond Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .info-box {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .info-box h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .info-box p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .code-block {
+            background: #f5f5f5;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 15px 25px;
+            font-size: 1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.6);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(245, 158, 11, 0.4);
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.6);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.6);
+        }
+
+        .link-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .link-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 20px;
+            text-decoration: none;
+            color: #333;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .link-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .link-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            color: #666;
+            font-weight: 600;
+        }
+
+        .status-value {
+            color: #333;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Raymond Analysis 测试页面</h1>
+            <p>这是一个测试页面，用于演示 Raymond Analysis 的数据收集功能</p>
+        </header>
+
+        <div class="info-box">
+            <h2>如何使用 Raymond Analysis</h2>
+            <p>在您的网站中添加以下代码即可开始收集数据：</p>
+            <div class="code-block">
+                &lt;script src="/tracker.js"&gt;&lt;/script&gt;
+            </div>
+            <p>追踪代码会自动收集页面浏览量、用户行为等数据，并发送到 Raymond Analysis 服务器。</p>
+        </div>
+
+        <div class="info-box">
+            <h2>测试按钮</h2>
+            <p>点击以下按钮来测试事件追踪功能：</p>
+            <div class="buttons-grid">
+                <button 
+                    class="btn btn-primary" 
+                    data-track-event="button_click" 
+                    data-track-type="interaction"
+                    onclick="raymond.trackEvent('interaction', 'primary_button_click', {button_type: 'primary'})"
+                >
+                    主要按钮点击
+                </button>
+                <button 
+                    class="btn btn-success" 
+                    data-track-event="button_click" 
+                    data-track-type="interaction"
+                    onclick="raymond.trackEvent('interaction', 'success_button_click', {button_type: 'success'})"
+                >
+                    成功按钮点击
+                </button>
+                <button 
+                    class="btn btn-warning" 
+                    data-track-event="button_click" 
+                    data-track-type="interaction"
+                    onclick="raymond.trackEvent('interaction', 'warning_button_click', {button_type: 'warning'})"
+                >
+                    警告按钮点击
+                </button>
+                <button 
+                    class="btn btn-danger" 
+                    data-track-event="button_click" 
+                    data-track-type="interaction"
+                    onclick="raymond.trackEvent('interaction', 'danger_button_click', {button_type: 'danger'})"
+                >
+                    危险按钮点击
+                </button>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h2>自定义事件追踪</h2>
+            <p>您也可以手动追踪自定义事件：</p>
+            <div class="code-block">
+                raymond.trackEvent('event_type', 'event_name', {key: 'value'});
+            </div>
+            <p>例如：</p>
+            <div class="code-block">
+                raymond.trackEvent('form', 'submit', {form_id: 'contact_form'});
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h2>快速导航</h2>
+            <div class="link-section">
+                <a href="/" class="link-card">
+                    <h3>仪表盘</h3>
+                    <p>查看实时数据统计和分析结果</p>
+                </a>
+                <a href="/test" class="link-card">
+                    <h3>测试页面</h3>
+                    <p>测试数据收集和事件追踪</p>
+                </a>
+            </div>
+        </div>
+
+        <div class="status">
+            <h2>当前会话信息</h2>
+            <div class="status-item">
+                <span class="status-label">Session ID:</span>
+                <span class="status-value" id="session-id">加载中...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">当前页面:</span>
+                <span class="status-value" id="current-url">加载中...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">屏幕分辨率:</span>
+                <span class="status-value" id="screen-resolution">加载中...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">浏览器语言:</span>
+                <span class="status-value" id="browser-language">加载中...</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="/tracker.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.raymond) {
+                document.getElementById('session-id').textContent = window.raymond.sessionId;
+            }
+            
+            document.getElementById('current-url').textContent = window.location.href;
+            document.getElementById('screen-resolution').textContent = window.screen.width + ' x ' + window.screen.height;
+            document.getElementById('browser-language').textContent = navigator.language;
+        });
+    </script>
+</body>
+</html>

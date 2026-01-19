@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raymond Analysis - 数据分析仪表盘</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Raymond Analysis</h1>
+            <p class="subtitle">实时网站数据分析平台</p>
+        </header>
+
+        <div class="stats-cards">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="online-users">0</div>
+                    <div class="stat-label">在线用户</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="page-views-today">0</div>
+                    <div class="stat-label">今日浏览量</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👁️</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="unique-visitors-today">0</div>
+                    <div class="stat-label">今日访客数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⏱️</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="avg-duration">0s</div>
+                    <div class="stat-label">平均停留时长</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-container">
+                <h2>页面浏览量趋势</h2>
+                <div id="page-views-chart" class="chart"></div>
+            </div>
+
+            <div class="chart-container">
+                <h2>访客数量趋势</h2>
+                <div id="visitors-chart" class="chart"></div>
+            </div>
+
+            <div class="chart-container">
+                <h2>24小时访问分布</h2>
+                <div id="hourly-chart" class="chart"></div>
+            </div>
+
+            <div class="chart-container">
+                <h2>设备分布</h2>
+                <div id="devices-chart" class="chart"></div>
+            </div>
+
+            <div class="chart-container full-width">
+                <h2>热门页面 TOP 10</h2>
+                <div id="top-pages-chart" class="chart"></div>
+            </div>
+
+            <div class="chart-container">
+                <h2>流量来源</h2>
+                <div id="referrers-chart" class="chart"></div>
+            </div>
+
+            <div class="chart-container">
+                <h2>事件统计</h2>
+                <div id="events-chart" class="chart"></div>
+            </div>
+        </div>
+
+        <div class="connection-status">
+            <span id="status-indicator" class="status-dot"></span>
+            <span id="status-text">连接中...</span>
+        </div>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
