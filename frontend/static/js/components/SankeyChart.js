@@ -6,7 +6,28 @@ class SankeyChart {
     }
 
     setData(data) {
-        this.data = data;
+        if (data.entry_pages && Object.keys(data.entry_pages).length > 0) {
+            const entryPages = data.entry_pages;
+            const newNodes = [...data.nodes];
+            const newLinks = [...data.links];
+            
+            newNodes.push({ name: '入口' });
+            
+            for (const [page, count] of Object.entries(entryPages)) {
+                newLinks.push({
+                    source: '入口',
+                    target: page,
+                    value: count
+                });
+            }
+            
+            this.data = {
+                nodes: newNodes,
+                links: newLinks
+            };
+        } else {
+            this.data = data;
+        }
         this.render();
     }
 

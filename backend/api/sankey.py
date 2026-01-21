@@ -11,10 +11,15 @@ async def get_page_flow(days: int = Query(7, description="查询天数")):
         sessions = tracking_service.get_sessions_by_days(days)
         
         session_flows = defaultdict(list)
+        entry_pages = defaultdict(int)
         
         for session in sessions:
             pageviews = tracking_service.get_session_pageviews(session['session_id'])
             sorted_pvs = sorted(pageviews, key=lambda x: x.get('created_at', 0))
+            
+            if len(sorted_pvs) > 0:
+                first_page = normalize_page_url(sorted_pvs[0].get('page_url', ''))
+                entry_pages[first_page] += 1
             
             max_hops = min(3, len(sorted_pvs) - 1)
             for i in range(max_hops):
@@ -40,10 +45,11 @@ async def get_page_flow(days: int = Query(7, description="查询天数")):
         
         return {
             'nodes': nodes_list,
-            'links': links
+            'links': links,
+            'entry_pages': dict(entry_pages)
         }
     except Exception as e:
-        return {'nodes': [], 'links': []}
+        return {'nodes': [], 'links': [], 'entry_pages': {}}
 
 def normalize_page_url(url):
     if not url:
