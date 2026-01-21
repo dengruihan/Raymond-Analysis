@@ -48,23 +48,52 @@
 
         <div class="charts-grid">
             <div class="chart-container">
-                <h2>页面浏览量趋势</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 style="margin: 0;">页面浏览量趋势</h2>
+                    <select id="page-views-time-range" class="time-range-select">
+                        <option value="1">24小时</option>
+                        <option value="2">48小时</option>
+                        <option value="7" selected>7天</option>
+                        <option value="30">30天</option>
+                    </select>
+                </div>
                 <div id="page-views-chart" class="chart"></div>
             </div>
 
             <div class="chart-container">
-                <h2>访客数量趋势</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 style="margin: 0;">访客数量趋势</h2>
+                    <select id="visitors-time-range" class="time-range-select">
+                        <option value="1">24小时</option>
+                        <option value="2">48小时</option>
+                        <option value="7" selected>7天</option>
+                        <option value="30">30天</option>
+                    </select>
+                </div>
                 <div id="visitors-chart" class="chart"></div>
             </div>
 
             <div class="chart-container">
-                <h2>24小时访问分布</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 style="margin: 0;">24小时访问分布</h2>
+                    <select id="hourly-time-range" class="time-range-select">
+                        <option value="1" selected>24小时</option>
+                        <option value="2">48小时</option>
+                        <option value="7">7天</option>
+                        <option value="30">30天</option>
+                    </select>
+                </div>
                 <div id="hourly-chart" class="chart"></div>
             </div>
 
             <div class="chart-container">
-                <h2>设备分布</h2>
+                <h2>操作系统分布</h2>
                 <div id="devices-chart" class="chart"></div>
+            </div>
+
+            <div class="chart-container">
+                <h2>浏览器分布</h2>
+                <div id="browsers-chart" class="chart"></div>
             </div>
 
             <div class="chart-container full-width">
@@ -92,11 +121,6 @@
             <div class="chart-container">
                 <h2>流量来源</h2>
                 <div id="referrers-chart" class="chart"></div>
-            </div>
-
-            <div class="chart-container">
-                <h2>事件统计</h2>
-                <div id="events-chart" class="chart"></div>
             </div>
         </div>
 

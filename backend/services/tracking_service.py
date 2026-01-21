@@ -119,7 +119,9 @@ class TrackingService:
         db = next(get_db())
         try:
             start_date = datetime.utcnow() - timedelta(days=days)
-            sessions = db.query(SessionModel).all()
+            sessions = db.query(SessionModel).filter(
+                SessionModel.start_time >= start_date
+            ).all()
             
             return [{
                 'session_id': s.session_id,

@@ -109,12 +109,19 @@ class SankeyChart {
     }
 
     getNodeColumn(pageName) {
-        if (pageName === '首页') return '0';
+        if (pageName === '首页' || pageName === '/') return '0';
         if (pageName.includes('登录')) return '1';
+        if (pageName.includes('注册')) return '1';
         if (pageName.includes('搜索')) return '1';
-        if (pageName.includes('WiFi模型')) return '2';
+        if (pageName.includes('WiFi模型') || pageName.includes('wifi-model')) return '2';
         if (pageName.includes('提交')) return '3';
-        return '2';
+        if (pageName.includes('dashboard') || pageName.includes('Dashboard')) return '1';
+        if (pageName.includes('>')) {
+            const parts = pageName.split(' > ');
+            const firstPage = parts[0];
+            return this.getNodeColumn(firstPage);
+        }
+        return '1';
     }
 
     render() {

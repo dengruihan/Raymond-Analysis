@@ -17,9 +17,9 @@ class Dashboard {
         this.charts.visitors = echarts.init(document.getElementById('visitors-chart'));
         this.charts.hourly = echarts.init(document.getElementById('hourly-chart'));
         this.charts.devices = echarts.init(document.getElementById('devices-chart'));
+        this.charts.browsers = echarts.init(document.getElementById('browsers-chart'));
         this.charts.topPages = echarts.init(document.getElementById('top-pages-chart'));
         this.charts.referrers = echarts.init(document.getElementById('referrers-chart'));
-        this.charts.events = echarts.init(document.getElementById('events-chart'));
         this.charts.sankey = new SankeyChart('sankey-chart', {
             width: document.getElementById('sankey-chart').offsetWidth,
             height: 500,
@@ -40,15 +40,30 @@ class Dashboard {
     async loadInitialData() {
         await Promise.all([
             this.updateRealtimeStats(),
-            this.loadPageViewsTrend(),
-            this.loadVisitorsTrend(),
-            this.loadHourlyDistribution(),
+            this.loadPageViewsTrend(7),
+            this.loadVisitorsTrend(7),
+            this.loadHourlyDistribution(1),
             this.loadDeviceStats(),
+            this.loadBrowserStats(),
             this.loadTopPages(),
             this.loadReferrers(),
-            this.loadEventStats(),
             this.loadPageFlow()
         ]);
+        this.initTimeRangeSelectors();
+    }
+
+    initTimeRangeSelectors() {
+        document.getElementById('page-views-time-range').addEventListener('change', (e) => {
+            this.loadPageViewsTrend(parseInt(e.target.value));
+        });
+
+        document.getElementById('visitors-time-range').addEventListener('change', (e) => {
+            this.loadVisitorsTrend(parseInt(e.target.value));
+        });
+
+        document.getElementById('hourly-time-range').addEventListener('change', (e) => {
+            this.loadHourlyDistribution(parseInt(e.target.value));
+        });
     }
 
     async updateRealtimeStats() {
@@ -65,14 +80,19 @@ class Dashboard {
         }
     }
 
-    async loadPageViewsTrend() {
+    async loadPageViewsTrend(days = 7) {
         try {
-            const response = await fetch('/api/stats/page-views/trend?days=7');
+            const response = await fetch(`/api/stats/page-views/trend?days=${days}`);
             const data = await response.json();
+
+            let titleText = '页面浏览量';
+            if (days === 1) titleText = '24小时页面浏览量';
+            else if (days === 2) titleText = '48小时页面浏览量';
+            else titleText = `近${days}天页面浏览量`;
 
             const option = {
                 title: {
-                    text: '近7天页面浏览量'
+                    text: titleText
                 },
                 tooltip: {
                     trigger: 'axis'
@@ -107,14 +127,19 @@ class Dashboard {
         }
     }
 
-    async loadVisitorsTrend() {
+    async loadVisitorsTrend(days = 7) {
         try {
-            const response = await fetch('/api/stats/visitors/trend?days=7');
+            const response = await fetch(`/api/stats/visitors/trend?days=${days}`);
             const data = await response.json();
+
+            let titleText = '访客数量';
+            if (days === 1) titleText = '24小时访客数量';
+            else if (days === 2) titleText = '48小时访客数量';
+            else titleText = `近${days}天访客数量`;
 
             const option = {
                 title: {
-                    text: '近7天访客数量'
+                    text: titleText
                 },
                 tooltip: {
                     trigger: 'axis'
@@ -142,14 +167,19 @@ class Dashboard {
         }
     }
 
-    async loadHourlyDistribution() {
+    async loadHourlyDistribution(days = 1) {
         try {
-            const response = await fetch('/api/stats/hourly?days=1');
+            const response = await fetch(`/api/stats/hourly?days=${days}`);
             const data = await response.json();
+
+            let titleText = '访问分布';
+            if (days === 1) titleText = '24小时访问分布';
+            else if (days === 2) titleText = '48小时访问分布';
+            else titleText = `近${days}天访问分布`;
 
             const option = {
                 title: {
-                    text: '24小时访问分布'
+                    text: titleText
                 },
                 tooltip: {
                     trigger: 'axis'
@@ -189,9 +219,14 @@ class Dashboard {
             const response = await fetch('/api/stats/devices');
             const data = await response.json();
 
+            const osData = Object.entries(data).map(([name, stats]) => ({
+                value: stats.count,
+                name: name
+            }));
+
             const option = {
                 title: {
-                    text: '设备分布',
+                    text: '操作系统分布',
                     left: 'center'
                 },
                 tooltip: {
@@ -199,7 +234,7 @@ class Dashboard {
                     formatter: '{a} <br/>{b}: {c} ({d}%)'
                 },
                 series: [{
-                    name: '设备类型',
+                    name: '操作系统',
                     type: 'pie',
                     radius: ['40%', '70%'],
                     avoidLabelOverlap: false,
@@ -212,17 +247,56 @@ class Dashboard {
                         show: true,
                         formatter: '{b}: {d}%'
                     },
-                    data: [
-                        { value: data.desktop.count, name: '桌面端' },
-                        { value: data.mobile.count, name: '移动端' },
-                        { value: data.tablet.count, name: '平板' }
-                    ]
+                    data: osData
                 }]
             };
 
             this.charts.devices.setOption(option);
         } catch (error) {
             console.error('Failed to load device stats:', error);
+        }
+    }
+
+    async loadBrowserStats() {
+        try {
+            const response = await fetch('/api/stats/browsers');
+            const data = await response.json();
+
+            const browserData = Object.entries(data).map(([name, stats]) => ({
+                value: stats.count,
+                name: name
+            }));
+
+            const option = {
+                title: {
+                    text: '浏览器分布',
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b}: {c} ({d}%)'
+                },
+                series: [{
+                    name: '浏览器',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 10,
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    },
+                    label: {
+                        show: true,
+                        formatter: '{b}: {d}%'
+                    },
+                    data: browserData
+                }]
+            };
+
+            this.charts.browsers.setOption(option);
+        } catch (error) {
+            console.error('Failed to load browser stats:', error);
         }
     }
 
@@ -284,7 +358,7 @@ class Dashboard {
                 },
                 tooltip: {
                     trigger: 'item',
-                    formatter: '{b}: {c} ({d}%)'
+                    formatter: '{a} <br/>{b}: {c} ({d}%)'
                 },
                 series: [{
                     name: '来源',
@@ -292,7 +366,7 @@ class Dashboard {
                     radius: '70%',
                     data: data.map(d => ({
                         value: d.views,
-                        name: d.referrer || '直接访问'
+                        name: d.referrer
                     }))
                 }]
             };
@@ -300,41 +374,6 @@ class Dashboard {
             this.charts.referrers.setOption(option);
         } catch (error) {
             console.error('Failed to load referrers:', error);
-        }
-    }
-
-    async loadEventStats() {
-        try {
-            const response = await fetch('/api/stats/events?days=7');
-            const data = await response.json();
-
-            const option = {
-                title: {
-                    text: '事件统计'
-                },
-                tooltip: {
-                    trigger: 'axis'
-                },
-                xAxis: {
-                    type: 'category',
-                    data: data.map(d => d.event_name)
-                },
-                yAxis: {
-                    type: 'value'
-                },
-                series: [{
-                    name: '事件次数',
-                    type: 'bar',
-                    data: data.map(d => d.count),
-                    itemStyle: {
-                        color: '#f59e0b'
-                    }
-                }]
-            };
-
-            this.charts.events.setOption(option);
-        } catch (error) {
-            console.error('Failed to load event stats:', error);
         }
     }
 
@@ -391,6 +430,7 @@ class Dashboard {
         setInterval(() => {
             this.loadTopPages();
             this.loadDeviceStats();
+            this.loadBrowserStats();
             this.loadPageFlow();
         }, 60000);
     }

@@ -15,14 +15,46 @@ class StatsService:
             "top_pages": []
         }
         
-        if redis_service.is_available():
-            stats["online_users"] = int(redis_service.get("stats:online_users") or 0)
-            stats["page_views_today"] = int(redis_service.get("stats:page_views_today") or 0)
-            stats["unique_visitors_today"] = int(redis_service.get("stats:unique_visitors_today") or 0)
-            stats["avg_duration_today"] = float(redis_service.get("stats:avg_duration_today") or 0)
+        db = next(get_db())
+        try:
+            today = datetime.utcnow().date()
+            today_start = datetime.combine(today, datetime.min.time())
+            yesterday_start = today_start - timedelta(days=1)
             
-            top_pages = redis_service.zrevrange("stats:top_pages", 0, 9, withscores=True)
-            stats["top_pages"] = [{"url": url, "views": int(score)} for url, score in top_pages]
+            stats["page_views_today"] = db.query(func.count(PageView.id)).filter(
+                PageView.timestamp >= today_start
+            ).scalar() or 0
+            
+            stats["unique_visitors_today"] = db.query(func.count(func.distinct(PageView.session_id))).filter(
+                PageView.timestamp >= today_start
+            ).scalar() or 0
+            
+            result = db.query(func.avg(Session.duration)).filter(
+                Session.start_time >= today_start,
+                Session.duration.isnot(None),
+                Session.duration > 0
+            ).scalar()
+            stats["avg_duration_today"] = float(result) if result else 0
+            
+            top_pages = db.query(
+                PageView.page_url,
+                func.count(PageView.id).label('views')
+            ).filter(
+                PageView.timestamp >= today_start
+            ).group_by(
+                PageView.page_url
+            ).order_by(
+                func.count(PageView.id).desc()
+            ).limit(10).all()
+            
+            stats["top_pages"] = [{"url": r.page_url, "views": r.views} for r in top_pages]
+            
+            result = db.query(func.count(func.distinct(Session.session_id))).filter(
+                Session.end_time >= yesterday_start
+            ).scalar()
+            stats["online_users"] = result or 0
+        finally:
+            db.close()
         
         return stats
     
@@ -122,49 +154,110 @@ class StatsService:
             db.close()
     
     def get_referrers(self, limit: int = 10) -> List[Dict[str, Any]]:
+        from urllib.parse import urlparse
+        
+        def parse_referrer(referrer):
+            if not referrer or referrer == "":
+                return "直接访问"
+            
+            try:
+                parsed = urlparse(referrer)
+                domain = parsed.netloc.lower()
+                
+                if domain in ["localhost", "127.0.0.1", "::1"]:
+                    return "直接访问"
+                
+                if "google" in domain:
+                    return "Google"
+                elif "baidu" in domain:
+                    return "百度"
+                elif "bing" in domain:
+                    return "Bing"
+                elif "yahoo" in domain:
+                    return "Yahoo"
+                elif "weibo" in domain:
+                    return "微博"
+                elif "zhihu" in domain:
+                    return "知乎"
+                elif "douyin" in domain or "tiktok" in domain:
+                    return "抖音/TikTok"
+                elif "bilibili" in domain:
+                    return "B站"
+                elif "github" in domain:
+                    return "GitHub"
+                else:
+                    return domain
+            except Exception:
+                return "直接访问"
+        
         db = next(get_db())
         try:
             results = db.query(
                 PageView.referrer,
                 func.count(PageView.id).label('views')
-            ).filter(
-                PageView.referrer.isnot(None),
-                PageView.referrer != ""
-            ).group_by(
-                PageView.referrer
-            ).order_by(
-                func.count(PageView.id).desc()
-            ).limit(limit).all()
+            ).all()
+            
+            referrer_counts = {}
+            for r in results:
+                ref_name = parse_referrer(r.referrer)
+                if ref_name not in referrer_counts:
+                    referrer_counts[ref_name] = 0
+                referrer_counts[ref_name] += r.views
+            
+            sorted_referrers = sorted(referrer_counts.items(), key=lambda x: x[1], reverse=True)[:limit]
+            
+            total = sum(count for _, count in sorted_referrers)
             
             return [
-                {"referrer": r.referrer, "views": r.views}
-                for r in results
+                {"referrer": name, "views": count, "percentage": count / total * 100 if total > 0 else 0}
+                for name, count in sorted_referrers
             ]
         finally:
             db.close()
     
     def get_device_stats(self) -> Dict[str, Any]:
+        import re
+        
+        def parse_os(user_agent):
+            if not user_agent:
+                return '未知'
+            user_agent = user_agent.lower()
+            if 'mac os x' in user_agent or 'macintosh' in user_agent:
+                return 'Mac OS'
+            elif 'windows' in user_agent:
+                return 'Windows'
+            elif 'linux' in user_agent:
+                return 'Linux'
+            elif 'android' in user_agent:
+                return 'Android'
+            elif 'iphone' in user_agent or 'ipad' in user_agent or 'ios' in user_agent:
+                return 'iOS'
+            else:
+                return '其他'
+        
         db = next(get_db())
         try:
             results = db.query(
-                PageView.screen_width,
+                PageView.user_agent,
                 func.count(PageView.id).label('count')
             ).filter(
-                PageView.screen_width.isnot(None)
+                PageView.user_agent.isnot(None)
             ).group_by(
-                PageView.screen_width
+                PageView.user_agent
             ).all()
             
-            mobile = sum(r.count for r in results if r.screen_width < 768)
-            tablet = sum(r.count for r in results if 768 <= r.screen_width < 1024)
-            desktop = sum(r.count for r in results if r.screen_width >= 1024)
+            os_stats = {}
+            for r in results:
+                os_name = parse_os(r.user_agent)
+                if os_name not in os_stats:
+                    os_stats[os_name] = 0
+                os_stats[os_name] += r.count
             
-            total = mobile + tablet + desktop
+            total = sum(os_stats.values())
             
             return {
-                "mobile": {"count": mobile, "percentage": mobile / total * 100 if total > 0 else 0},
-                "tablet": {"count": tablet, "percentage": tablet / total * 100 if total > 0 else 0},
-                "desktop": {"count": desktop, "percentage": desktop / total * 100 if total > 0 else 0}
+                os_name: {"count": count, "percentage": count / total * 100 if total > 0 else 0}
+                for os_name, count in os_stats.items()
             }
         finally:
             db.close()
@@ -195,6 +288,51 @@ class StatsService:
                 {"event_name": r.event_name, "count": r.count}
                 for r in results
             ]
+        finally:
+            db.close()
+
+    def get_browser_stats(self) -> Dict[str, Any]:
+        def parse_browser(user_agent):
+            if not user_agent:
+                return '未知'
+            user_agent = user_agent.lower()
+            if 'chrome' in user_agent and 'edg' not in user_agent:
+                return 'Chrome'
+            elif 'safari' in user_agent and 'chrome' not in user_agent:
+                return 'Safari'
+            elif 'firefox' in user_agent:
+                return 'Firefox'
+            elif 'edge' in user_agent or 'edg' in user_agent:
+                return 'Edge'
+            elif 'opera' in user_agent or 'opr' in user_agent:
+                return 'Opera'
+            else:
+                return '其他'
+        
+        db = next(get_db())
+        try:
+            results = db.query(
+                PageView.user_agent,
+                func.count(PageView.id).label('count')
+            ).filter(
+                PageView.user_agent.isnot(None)
+            ).group_by(
+                PageView.user_agent
+            ).all()
+            
+            browser_stats = {}
+            for r in results:
+                browser_name = parse_browser(r.user_agent)
+                if browser_name not in browser_stats:
+                    browser_stats[browser_name] = 0
+                browser_stats[browser_name] += r.count
+            
+            total = sum(browser_stats.values())
+            
+            return {
+                browser_name: {"count": count, "percentage": count / total * 100 if total > 0 else 0}
+                for browser_name, count in browser_stats.items()
+            }
         finally:
             db.close()
 
