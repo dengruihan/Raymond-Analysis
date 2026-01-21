@@ -8,18 +8,20 @@ class SankeyChart {
     setData(data) {
         if (data.entry_pages && Object.keys(data.entry_pages).length > 0) {
             const entryPages = data.entry_pages;
-            const newNodes = [...data.nodes];
+            const newNodes = [];
             const newLinks = [...data.links];
             
-            newNodes.push({ name: '入口' });
-            
             for (const [page, count] of Object.entries(entryPages)) {
+                const entryNodeName = page + ' (入口)';
+                newNodes.push({ name: entryNodeName });
                 newLinks.push({
-                    source: '入口',
+                    source: entryNodeName,
                     target: page,
                     value: count
                 });
             }
+            
+            newNodes.push(...data.nodes.map(n => ({ name: n.name })));
             
             this.data = {
                 nodes: newNodes,
