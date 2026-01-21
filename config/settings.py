@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
     
     HOST: str = "0.0.0.0"
-    PORT: int = 8000
+    PORT: int = 8001
     
     DATA_RETENTION_DAYS: int = 30
     

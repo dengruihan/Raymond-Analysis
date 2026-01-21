@@ -20,9 +20,20 @@ class Dashboard {
         this.charts.topPages = echarts.init(document.getElementById('top-pages-chart'));
         this.charts.referrers = echarts.init(document.getElementById('referrers-chart'));
         this.charts.events = echarts.init(document.getElementById('events-chart'));
+        this.charts.sankey = new SankeyChart('sankey-chart', {
+            width: document.getElementById('sankey-chart').offsetWidth,
+            height: 500,
+            nodePadding: 40,
+            nodeWidth: 30,
+            colors: [
+                '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e',
+                '#f97316', '#eab308', '#22c55e', '#06b6d4',
+                '#0ea5e9', '#3b82f6', '#14b8a6', '#f472b6'
+            ]
+        });
 
         window.addEventListener('resize', () => {
-            Object.values(this.charts).forEach(chart => chart.resize());
+            Object.values(this.charts).forEach(chart => chart.resize && chart.resize());
         });
     }
 
@@ -35,7 +46,8 @@ class Dashboard {
             this.loadDeviceStats(),
             this.loadTopPages(),
             this.loadReferrers(),
-            this.loadEventStats()
+            this.loadEventStats(),
+            this.loadPageFlow()
         ]);
     }
 
@@ -379,7 +391,21 @@ class Dashboard {
         setInterval(() => {
             this.loadTopPages();
             this.loadDeviceStats();
+            this.loadPageFlow();
         }, 60000);
+    }
+
+    async loadPageFlow() {
+        try {
+            const response = await fetch('/api/stats/page-flow?days=7');
+            const data = await response.json();
+
+            if (data.nodes && data.links) {
+                this.charts.sankey.setData(data);
+            }
+        } catch (error) {
+            console.error('Failed to load page flow:', error);
+        }
     }
 }
 

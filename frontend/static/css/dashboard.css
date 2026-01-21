@@ -169,3 +169,15 @@ header h1 {
         height: 300px;
     }
 }
+
+.sankey-link {
+    cursor: pointer;
+}
+
+.sankey-node {
+    cursor: pointer;
+}
+
+.sankey-node rect {
+    transition: all 0.3s ease;
+}

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>追踪测试</title>
+    <script src="/tracker.js"></script>
+</head>
+<body>
+    <h1>Raymond Analysis 追踪测试</h1>
+    <p>打开浏览器控制台（F12）查看追踪数据</p>
+    <button onclick="testTrack()">发送测试事件</button>
+    
+    <script>
+        function testTrack() {
+            if (window.raymond) {
+                console.log('发送测试事件...');
+                window.raymond.trackEvent('test', 'button_click', {
+                    test: true,
+                    timestamp: new Date().toISOString()
+                });
+                alert('测试事件已发送！');
+            } else {
+                alert('追踪代码未加载！');
+            }
+        }
+    </script>
+</body>
+</html>

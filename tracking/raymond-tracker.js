@@ -4,6 +4,7 @@
     var RaymondTracker = function(config) {
         this.config = config || {};
         this.trackerUrl = config.trackerUrl || window.location.origin + '/api/track';
+        this.pixelUrl = config.pixelUrl || 'http://localhost:8001/api/pixel';
         this.sessionId = this.getSessionId();
         this.userId = config.userId || null;
         this.startTime = Date.now();
@@ -28,7 +29,8 @@
     };
 
     RaymondTracker.prototype.trackPageView = function(pageUrl, pageTitle) {
-        var data = {
+        var params = {
+            type: 'pageview',
             page_url: pageUrl || window.location.href,
             page_title: pageTitle || document.title,
             referrer: document.referrer,
@@ -36,49 +38,68 @@
             session_id: this.sessionId,
             screen_width: window.screen.width,
             screen_height: window.screen.height,
-            language: navigator.language
+            language: navigator.language,
+            timestamp: Date.now()
         };
 
-        this.sendRequest('/pageview', data);
+        this.sendPixel(params);
         this.pageViewSent = true;
     };
 
-    RaymondTracker.prototype.trackEvent = function(eventType, eventName, properties) {
-        var data = {
+    RaymondTracker.prototype.trackEvent = function(eventType, eventName, properties, elementId) {
+        var params = {
+            type: 'event',
             event_type: eventType || 'custom',
             event_name: eventName,
             page_url: window.location.href,
             user_id: this.userId,
             session_id: this.sessionId,
-            properties: properties || {}
+            element_id: elementId || null,
+            properties: properties ? JSON.stringify(properties) : '{}',
+            timestamp: Date.now()
         };
 
-        this.sendRequest('/event', data);
+        this.sendPixel(params);
     };
 
     RaymondTracker.prototype.updateDuration = function() {
-        if (!this.pageViewSent) return;
+        if (!this.pageViewSent) {
+            return;
+        }
 
         var duration = (Date.now() - this.startTime) / 1000;
-        var data = {
+        var params = {
+            type: 'duration',
             session_id: this.sessionId,
-            duration: duration
+            duration: duration,
+            timestamp: Date.now()
         };
 
-        this.sendRequest('/session/duration', data);
+        this.sendPixel(params);
     };
 
-    RaymondTracker.prototype.sendRequest = function(endpoint, data) {
-        var url = this.trackerUrl + endpoint;
-        
-        if (navigator.sendBeacon) {
-            navigator.sendBeacon(url, JSON.stringify(data));
-        } else {
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', url, true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.send(JSON.stringify(data));
+    RaymondTracker.prototype.sendPixel = function(params) {
+        var url = this.pixelUrl + '?' + this.objectToQueryString(params);
+        var img = new Image();
+        img.onload = function() {
+            console.log('[Raymond] 追踪数据已发送:', params);
+        };
+        img.onerror = function() {
+            console.error('[Raymond] 追踪发送失败:', params);
+        };
+        img.src = url;
+    };
+
+    RaymondTracker.prototype.objectToQueryString = function(obj) {
+        var str = [];
+        for (var p in obj) {
+            if (obj.hasOwnProperty(p)) {
+                var k = encodeURIComponent(p);
+                var v = encodeURIComponent(obj[p]);
+                str.push(k + '=' + v);
+            }
         }
+        return str.join('&');
     };
 
     RaymondTracker.prototype.init = function() {
@@ -90,13 +111,13 @@
             var target = e.target;
             var eventName = target.getAttribute('data-track-event') || 'click';
             var eventType = target.getAttribute('data-track-type') || 'interaction';
+            var elementId = target.id || target.getAttribute('data-id') || null;
             
             self.trackEvent(eventType, eventName, {
                 tag_name: target.tagName,
-                id: target.id,
                 class: target.className,
-                text: target.textContent.substring(0, 100)
-            });
+                text: target.textContent ? target.textContent.substring(0, 100) : ''
+            }, elementId);
         });
 
         window.addEventListener('beforeunload', function() {
@@ -112,7 +133,9 @@
 
     window.RaymondTracker = RaymondTracker;
 
-    window.raymond = new RaymondTracker();
+    window.raymond = new RaymondTracker({
+        pixelUrl: 'http://localhost:8001/api/pixel'
+    });
     
     if (document.readyState === 'complete') {
         window.raymond.init();

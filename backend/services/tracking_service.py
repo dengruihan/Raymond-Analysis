@@ -114,5 +114,38 @@ class TrackingService:
             raise e
         finally:
             db.close()
+    
+    def get_sessions_by_days(self, days: int):
+        db = next(get_db())
+        try:
+            start_date = datetime.utcnow() - timedelta(days=days)
+            sessions = db.query(SessionModel).all()
+            
+            return [{
+                'session_id': s.session_id,
+                'user_id': s.user_id,
+                'start_time': s.start_time.isoformat() if s.start_time else None,
+                'end_time': s.end_time.isoformat() if s.end_time else None,
+                'page_views': s.page_views,
+                'duration': s.duration
+            } for s in sessions]
+        finally:
+            db.close()
+    
+    def get_session_pageviews(self, session_id: str):
+        db = next(get_db())
+        try:
+            pageviews = db.query(PageView).filter(
+                PageView.session_id == session_id
+            ).order_by(PageView.timestamp).all()
+            
+            return [{
+                'id': pv.id,
+                'page_url': pv.page_url,
+                'page_title': pv.page_title,
+                'created_at': pv.timestamp.timestamp() if pv.timestamp else 0
+            } for pv in pageviews]
+        finally:
+            db.close()
 
 tracking_service = TrackingService()

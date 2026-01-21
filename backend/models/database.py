@@ -89,7 +89,7 @@ class AggregatedStats(Base):
     stat_date = Column(DateTime, index=True)
     page_url = Column(String(500), nullable=True, index=True)
     value = Column(Float, default=0.0)
-    metadata = Column(Text, nullable=True)
+    meta_data = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     __table_args__ = (
