@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据统计 Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .header h1 {
+            color: #fff;
+            font-size: 28px;
+            font-weight: 300;
+        }
+
+        .header .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #888;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            border-color: #555;
+            transform: translateY(-2px);
+        }
+
+        .stat-card .label {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-card .value {
+            color: #fff;
+            font-size: 32px;
+            font-weight: 300;
+            margin-bottom: 4px;
+        }
+
+        .stat-card .sub-value {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #e0e0e0;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #252525;
+            border-color: #555;
+        }
+
+        .btn.active {
+            background: #333;
+            border-color: #666;
+            color: #fff;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .chart-container.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .chart-title {
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 15px;
+            font-weight: 400;
+        }
+
+        .chart {
+            width: 100%;
+            height: 350px;
+        }
+
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #2a1a1a;
+            border: 1px solid #663333;
+            color: #ff6b6b;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>数据统计 Dashboard</h1>
+        <div class="status">
+            <span class="status-dot"></span>
+            <span>实时更新中</span>
+            <span id="lastUpdate">--</span>
+        </div>
+    </div>
+
+    <div id="errorContainer"></div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="label">当前用户数</div>
+            <div class="value" id="currentUsers">0</div>
+            <div class="sub-value">活跃用户</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">请求总数</div>
+            <div class="value" id="totalRequests">0</div>
+            <div class="sub-value">累计请求</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">总会话数</div>
+            <div class="value" id="totalSessions">0</div>
+            <div class="sub-value">用户会话</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <span style="color: #888; line-height: 36px; margin-right: 10px;">时间粒度:</span>
+        <button class="btn active" onclick="changeInterval('minute')">每分钟</button>
+        <button class="btn" onclick="changeInterval('5minute')">每5分钟</button>
+        <button class="btn" onclick="changeInterval('hour')">每小时</button>
+        <span style="color: #888; line-height: 36px; margin-left: 20px;">自动刷新:</span>
+        <button class="btn active" id="autoRefreshBtn" onclick="toggleAutoRefresh()">开启</button>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-container">
+            <div class="chart-title">请求量趋势</div>
+            <div id="timeSeriesChart" class="chart"></div>
+        </div>
+        <div class="chart-container">
+            <div class="chart-title">设备流量分布</div>
+            <div id="deviceChart" class="chart"></div>
+        </div>
+        <div class="chart-container">
+            <div class="chart-title">热门页面</div>
+            <div id="topPagesChart" class="chart"></div>
+        </div>
+        <div class="chart-container">
+            <div class="chart-title">页面流向图（桑基图）</div>
+            <div id="sankeyChart" class="chart"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8888';
+        let currentInterval = 'minute';
+        let autoRefresh = true;
+        let refreshTimer = null;
+        let charts = {};
+
+        // ECharts 黑白灰主题配置
+        const chartTheme = {
+            backgroundColor: 'transparent',
+            textStyle: {
+                color: '#e0e0e0'
+            },
+            grid: {
+                borderColor: '#333',
+                backgroundColor: 'transparent'
+            },
+            tooltip: {
+                backgroundColor: '#1a1a1a',
+                borderColor: '#333',
+                textStyle: {
+                    color: '#e0e0e0'
+                }
+            },
+            legend: {
+                textStyle: {
+                    color: '#e0e0e0'
+                }
+            },
+            color: ['#888', '#aaa', '#ccc', '#ddd', '#eee', '#f0f0f0']
+        };
+
+        // 初始化图表
+        function initCharts() {
+            // 时间序列图表
+            charts.timeSeries = echarts.init(document.getElementById('timeSeriesChart'));
+            
+            // 设备流量图表
+            charts.device = echarts.init(document.getElementById('deviceChart'));
+            
+            // 热门页面图表
+            charts.topPages = echarts.init(document.getElementById('topPagesChart'));
+            
+            // 桑基图
+            charts.sankey = echarts.init(document.getElementById('sankeyChart'));
+        }
+
+        // 更新统计数据
+        function updateStats(data) {
+            document.getElementById('currentUsers').textContent = data.current_users.toLocaleString();
+            document.getElementById('totalRequests').textContent = data.total_requests.toLocaleString();
+            document.getElementById('totalSessions').textContent = data.total_sessions.toLocaleString();
+            
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+        }
+
+        // 更新时间序列图表
+        function updateTimeSeriesChart(data) {
+            const timeData = data.time_series || [];
+            const times = timeData.map(item => item.time_period);
+            const counts = timeData.map(item => item.count);
+
+            const option = {
+                ...chartTheme,
+                tooltip: {
+                    ...chartTheme.tooltip,
+                    trigger: 'axis'
+                },
+                xAxis: {
+                    type: 'category',
+                    data: times,
+                    axisLine: { lineStyle: { color: '#333' } },
+                    axisLabel: { color: '#888', rotate: 45 }
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLine: { lineStyle: { color: '#333' } },
+                    axisLabel: { color: '#888' },
+                    splitLine: { lineStyle: { color: '#1a1a1a' } }
+                },
+                series: [{
+                    name: '请求量',
+                    type: 'line',
+                    data: counts,
+                    smooth: true,
+                    areaStyle: {
+                        color: {
+                            type: 'linear',
+                            x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [
+                                { offset: 0, color: 'rgba(136, 136, 136, 0.3)' },
+                                { offset: 1, color: 'rgba(136, 136, 136, 0.05)' }
+                            ]
+                        }
+                    },
+                    lineStyle: { color: '#888', width: 2 },
+                    itemStyle: { color: '#888' }
+                }]
+            };
+
+            charts.timeSeries.setOption(option);
+        }
+
+        // 更新设备流量图表
+        function updateDeviceChart(data) {
+            const deviceData = data.device_stats || [];
+            
+            // 按设备类型聚合
+            const deviceMap = {};
+            deviceData.forEach(item => {
+                const key = item.device_type || 'unknown';
+                if (!deviceMap[key]) {
+                    deviceMap[key] = 0;
+                }
+                deviceMap[key] += item.count;
+            });
+
+            const pieData = Object.keys(deviceMap).map(key => ({
+                name: key,
+                value: deviceMap[key]
+            }));
+
+            const option = {
+                ...chartTheme,
+                tooltip: {
+                    ...chartTheme.tooltip,
+                    trigger: 'item',
+                    formatter: '{b}: {c} ({d}%)'
+                },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    data: pieData,
+                    itemStyle: {
+                        borderRadius: 8,
+                        borderColor: '#1a1a1a',
+                        borderWidth: 2
+                    },
+                    label: {
+                        color: '#e0e0e0'
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(136, 136, 136, 0.5)'
+                        }
+                    }
+                }]
+            };
+
+            charts.device.setOption(option);
+        }
+
+        // 更新热门页面图表
+        function updateTopPagesChart(data) {
+            const pages = data.top_pages || [];
+            const pageNames = pages.map(p => p.page_path || p.page_title || 'Unknown').slice(0, 10);
+            const pageCounts = pages.map(p => p.count || 0).slice(0, 10);
+
+            const option = {
+                ...chartTheme,
+                tooltip: {
+                    ...chartTheme.tooltip,
+                    trigger: 'axis',
+                    axisPointer: { type: 'shadow' }
+                },
+                grid: {
+                    ...chartTheme.grid,
+                    left: '15%',
+                    right: '10%'
+                },
+                xAxis: {
+                    type: 'value',
+                    axisLine: { lineStyle: { color: '#333' } },
+                    axisLabel: { color: '#888' },
+                    splitLine: { lineStyle: { color: '#1a1a1a' } }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: pageNames,
+                    axisLine: { lineStyle: { color: '#333' } },
+                    axisLabel: { color: '#888' }
+                },
+                series: [{
+                    name: '访问量',
+                    type: 'bar',
+                    data: pageCounts,
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                            { offset: 0, color: '#555' },
+                            { offset: 1, color: '#888' }
+                        ])
+                    }
+                }]
+            };
+
+            charts.topPages.setOption(option);
+        }
+
+        // 检测并移除循环路径（确保桑基图是DAG）
+        function removeCycles(nodes, links) {
+            // 按流量从大到小排序，优先保留流量大的边
+            const sortedLinks = [...links].sort((a, b) => b.value - a.value);
+            
+            // 构建节点映射
+            const nodeMap = new Set(nodes.map(n => n.name));
+            
+            // 过滤掉无效的边
+            const validLinks = sortedLinks.filter(link => 
+                nodeMap.has(link.source) && nodeMap.has(link.target)
+            );
+            
+            // 构建图并逐个添加边，确保不形成循环
+            const graph = {};
+            nodes.forEach(node => {
+                graph[node.name] = [];
+            });
+            
+            const finalLinks = [];
+            
+            // 检查从target到source是否可达（如果可达，添加这条边会形成循环）
+            function canReach(start, target, visited) {
+                if (start === target) return true;
+                if (visited.has(start)) return false;
+                visited.add(start);
+                
+                const neighbors = graph[start] || [];
+                for (const neighbor of neighbors) {
+                    if (canReach(neighbor, target, visited)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            
+            // 逐个添加不形成循环的边
+            for (const link of validLinks) {
+                // 检查添加这条边是否会形成循环
+                if (!canReach(link.target, link.source, new Set())) {
+                    // 不会形成循环，添加这条边
+                    graph[link.source].push(link.target);
+                    finalLinks.push(link);
+                }
+                // 否则跳过这条边（会形成循环）
+            }
+            
+            return { nodes, links: finalLinks };
+        }
+
+        // 更新桑基图
+        function updateSankeyChart(data) {
+            const flowData = data.page_flow || { nodes: [], links: [] };
+            
+            if (flowData.nodes.length === 0 || flowData.links.length === 0) {
+                charts.sankey.setOption({
+                    ...chartTheme,
+                    title: {
+                        text: '暂无数据',
+                        left: 'center',
+                        top: 'center',
+                        textStyle: { color: '#666' }
+                    }
+                });
+                return;
+            }
+
+            // 构建节点映射，过滤无效链接
+            const nodeMap = new Set(flowData.nodes.map(n => n.name));
+            const validLinks = flowData.links.filter(link => 
+                nodeMap.has(link.source) && nodeMap.has(link.target)
+            );
+
+            if (validLinks.length === 0) {
+                charts.sankey.setOption({
+                    ...chartTheme,
+                    title: {
+                        text: '暂无有效流向数据',
+                        left: 'center',
+                        top: 'center',
+                        textStyle: { color: '#666' }
+                    }
+                });
+                return;
+            }
+
+            const option = {
+                ...chartTheme,
+                tooltip: {
+                    ...chartTheme.tooltip,
+                    trigger: 'item',
+                    triggerOn: 'mousemove',
+                    formatter: function(params) {
+                        if (params.dataType === 'edge') {
+                            return `${params.data.sourceName} → ${params.data.targetName}<br/>流量: ${params.data.value}`;
+                        } else {
+                            return params.name;
+                        }
+                    }
+                },
+                series: [{
+                    type: 'sankey',
+                    layout: 'horizontal',
+                    emphasis: {
+                        focus: 'adjacency'
+                    },
+                    data: flowData.nodes.map(node => ({
+                        name: node.name,
+                        itemStyle: {
+                            color: '#888'
+                        }
+                    })),
+                    links: validLinks.map(link => ({
+                        source: link.source,
+                        target: link.target,
+                        value: link.value
+                    })),
+                    itemStyle: {
+                        borderWidth: 1,
+                        borderColor: '#333',
+                        color: '#888'
+                    },
+                    lineStyle: {
+                        color: 'gradient',
+                        curveness: 0.5,
+                        opacity: 0.7
+                    },
+                    label: {
+                        color: '#e0e0e0',
+                        fontSize: 11,
+                        position: 'right'
+                    },
+                    levels: [{
+                        depth: 0,
+                        itemStyle: {
+                            color: '#555'
+                        },
+                        lineStyle: {
+                            color: 'gradient',
+                            opacity: 0.7
+                        }
+                    }, {
+                        depth: 1,
+                        itemStyle: {
+                            color: '#888'
+                        }
+                    }, {
+                        depth: 2,
+                        itemStyle: {
+                            color: '#aaa'
+                        }
+                    }, {
+                        depth: 3,
+                        itemStyle: {
+                            color: '#ccc'
+                        }
+                    }]
+                }]
+            };
+
+            charts.sankey.setOption(option);
+        }
+
+        // 加载数据
+        async function loadData() {
+            try {
+                const response = await fetch(`${API_BASE}/api/dashboard?interval=${currentInterval}`);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    const data = result.data;
+                    updateStats(data);
+                    updateTimeSeriesChart(data);
+                    updateDeviceChart(data);
+                    updateTopPagesChart(data);
+                    updateSankeyChart(data);
+                    
+                    document.getElementById('errorContainer').innerHTML = '';
+                } else {
+                    throw new Error(result.message || '获取数据失败');
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('errorContainer').innerHTML = 
+                    `<div class="error">错误: ${error.message}</div>`;
+            }
+        }
+
+        // 切换时间粒度
+        function changeInterval(interval) {
+            currentInterval = interval;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.controls .btn').forEach(btn => {
+                if (btn.textContent === '每分钟' || btn.textContent === '每5分钟' || btn.textContent === '每小时') {
+                    btn.classList.remove('active');
+                }
+            });
+            if (event) {
+                event.target.classList.add('active');
+            }
+            
+            loadData();
+        }
+
+        // 切换自动刷新
+        function toggleAutoRefresh() {
+            autoRefresh = !autoRefresh;
+            const btn = document.getElementById('autoRefreshBtn');
+            btn.textContent = autoRefresh ? '开启' : '关闭';
+            btn.classList.toggle('active', autoRefresh);
+            
+            if (autoRefresh) {
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
+            }
+        }
+
+        function startAutoRefresh() {
+            stopAutoRefresh();
+            refreshTimer = setInterval(loadData, 5000); // 每5秒刷新一次
+        }
+
+        function stopAutoRefresh() {
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+                refreshTimer = null;
+            }
+        }
+
+        // 窗口大小改变时调整图表
+        window.addEventListener('resize', () => {
+            Object.values(charts).forEach(chart => {
+                chart.resize();
+            });
+        });
+
+        // 初始化
+        initCharts();
+        loadData();
+        if (autoRefresh) {
+            startAutoRefresh();
+        }
+    </script>
+</body>
+</html>
+

@@ -64,21 +64,41 @@ class StatsService:
             end_date = datetime.utcnow()
             start_date = end_date - timedelta(days=days)
             
-            results = db.query(
-                func.date(PageView.timestamp).label('date'),
-                func.count(PageView.id).label('views')
-            ).filter(
-                PageView.timestamp >= start_date
-            ).group_by(
-                func.date(PageView.timestamp)
-            ).order_by(
-                func.date(PageView.timestamp)
-            ).all()
-            
-            return [
-                {"date": str(r.date), "views": r.views}
-                for r in results
-            ]
+            if days <= 2:
+                results = db.query(
+                    func.date(PageView.timestamp).label('date'),
+                    func.extract('hour', PageView.timestamp).label('hour'),
+                    func.count(PageView.id).label('views')
+                ).filter(
+                    PageView.timestamp >= start_date
+                ).group_by(
+                    func.date(PageView.timestamp),
+                    func.extract('hour', PageView.timestamp)
+                ).order_by(
+                    func.date(PageView.timestamp),
+                    func.extract('hour', PageView.timestamp)
+                ).all()
+                
+                return [
+                    {"date": str(r.date), "hour": int(r.hour), "views": r.views}
+                    for r in results
+                ]
+            else:
+                results = db.query(
+                    func.date(PageView.timestamp).label('date'),
+                    func.count(PageView.id).label('views')
+                ).filter(
+                    PageView.timestamp >= start_date
+                ).group_by(
+                    func.date(PageView.timestamp)
+                ).order_by(
+                    func.date(PageView.timestamp)
+                ).all()
+                
+                return [
+                    {"date": str(r.date), "views": r.views}
+                    for r in results
+                ]
         finally:
             db.close()
     

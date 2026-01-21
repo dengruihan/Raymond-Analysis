@@ -108,6 +108,10 @@ header h1 {
     height: 400px;
 }
 
+#sankey-chart {
+    height: 500px !important;
+}
+
 .connection-status {
     background: white;
     border-radius: 10px;

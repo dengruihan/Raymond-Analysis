@@ -16,7 +16,8 @@ async def get_page_flow(days: int = Query(7, description="查询天数")):
             pageviews = tracking_service.get_session_pageviews(session['session_id'])
             sorted_pvs = sorted(pageviews, key=lambda x: x.get('created_at', 0))
             
-            for i in range(len(sorted_pvs) - 1):
+            max_hops = min(3, len(sorted_pvs) - 1)
+            for i in range(max_hops):
                 current_page = normalize_page_url(sorted_pvs[i].get('page_url', ''))
                 next_page = normalize_page_url(sorted_pvs[i+1].get('page_url', ''))
                 
