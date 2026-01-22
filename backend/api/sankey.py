@@ -17,14 +17,17 @@ async def get_page_flow(days: int = Query(7, description="查询天数")):
             pageviews = tracking_service.get_session_pageviews(session['session_id'])
             sorted_pvs = sorted(pageviews, key=lambda x: x.get('created_at', 0))
             
+            max_hops = min(3, len(sorted_pvs) - 1)
+            for i in range(max_hops + 1):
+                sorted_pvs[i]['normalized_url'] = normalize_page_url(sorted_pvs[i].get('page_url', ''))
+            
             if len(sorted_pvs) > 0:
-                first_page = normalize_page_url(sorted_pvs[0].get('page_url', ''))
+                first_page = sorted_pvs[0]['normalized_url']
                 entry_pages[first_page] += 1
             
-            max_hops = min(3, len(sorted_pvs) - 1)
             for i in range(max_hops):
-                current_page = normalize_page_url(sorted_pvs[i].get('page_url', ''))
-                next_page = normalize_page_url(sorted_pvs[i+1].get('page_url', ''))
+                current_page = sorted_pvs[i]['normalized_url']
+                next_page = sorted_pvs[i+1]['normalized_url']
                 
                 if current_page and next_page and current_page != next_page:
                     session_flows[(current_page, next_page)].append(session['session_id'])
