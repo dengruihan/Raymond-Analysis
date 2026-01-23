@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Query
 from backend.services.tracking_service import tracking_service
+from backend.models import PageView
+from sqlalchemy.orm import Session as DBSession
 from collections import defaultdict
 import re
 
@@ -15,6 +17,9 @@ async def get_page_flow(days: int = Query(7, description="查询天数")):
         
         for session in sessions:
             pageviews = tracking_service.get_session_pageviews(session['session_id'])
+            
+            pageviews = [pv for pv in pageviews if not should_exclude_url(pv.get('page_url', ''))]
+            
             sorted_pvs = sorted(pageviews, key=lambda x: x.get('created_at', 0))
             
             max_hops = min(3, len(sorted_pvs) - 1)
@@ -53,6 +58,11 @@ async def get_page_flow(days: int = Query(7, description="查询天数")):
         }
     except Exception as e:
         return {'nodes': [], 'links': [], 'entry_pages': {}}
+
+def should_exclude_url(url):
+    if not url:
+        return False
+    return 'localhost:5500' in url or '/dashboard' in url
 
 def normalize_page_url(url):
     if not url:

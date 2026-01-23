@@ -131,6 +131,23 @@
                 self.updateDuration();
             }
         });
+
+        var originalPushState = history.pushState;
+        var originalReplaceState = history.replaceState;
+        
+        history.pushState = function() {
+            originalPushState.apply(this, arguments);
+            self.trackPageView();
+        };
+        
+        history.replaceState = function() {
+            originalReplaceState.apply(this, arguments);
+            self.trackPageView();
+        };
+        
+        window.addEventListener('popstate', function() {
+            self.trackPageView();
+        });
     };
 
     window.RaymondTracker = RaymondTracker;
