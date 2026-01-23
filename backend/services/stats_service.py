@@ -6,6 +6,9 @@ from backend.services.cache_service import redis_service
 
 class StatsService:
     
+    def _exclude_dashboard(self, query):
+        return query.filter(~PageView.page_url.like('%localhost:5500%')).filter(~PageView.page_url.like('%/dashboard%'))
+    
     def get_realtime_stats(self) -> Dict[str, Any]:
         stats = {
             "online_users": 0,
@@ -17,15 +20,16 @@ class StatsService:
         
         db = next(get_db())
         try:
-            today = datetime.utcnow().date()
+            now = datetime.now()
+            today = now.date()
             today_start = datetime.combine(today, datetime.min.time())
             yesterday_start = today_start - timedelta(days=1)
             
-            stats["page_views_today"] = db.query(func.count(PageView.id)).filter(
+            stats["page_views_today"] = self._exclude_dashboard(db.query(func.count(PageView.id))).filter(
                 PageView.timestamp >= today_start
             ).scalar() or 0
             
-            stats["unique_visitors_today"] = db.query(func.count(func.distinct(PageView.session_id))).filter(
+            stats["unique_visitors_today"] = self._exclude_dashboard(db.query(func.count(func.distinct(PageView.session_id)))).filter(
                 PageView.timestamp >= today_start
             ).scalar() or 0
             
@@ -36,10 +40,10 @@ class StatsService:
             ).scalar()
             stats["avg_duration_today"] = float(result) if result else 0
             
-            top_pages = db.query(
+            top_pages = self._exclude_dashboard(db.query(
                 PageView.page_url,
                 func.count(PageView.id).label('views')
-            ).filter(
+            )).filter(
                 PageView.timestamp >= today_start
             ).group_by(
                 PageView.page_url
@@ -61,15 +65,15 @@ class StatsService:
     def get_page_views_trend(self, days: int = 7) -> List[Dict[str, Any]]:
         db = next(get_db())
         try:
-            end_date = datetime.utcnow()
+            end_date = datetime.now()
             start_date = end_date - timedelta(days=days)
             
             if days <= 2:
-                results = db.query(
+                results = self._exclude_dashboard(db.query(
                     func.date(PageView.timestamp).label('date'),
                     func.extract('hour', PageView.timestamp).label('hour'),
                     func.count(PageView.id).label('views')
-                ).filter(
+                )).filter(
                     PageView.timestamp >= start_date
                 ).group_by(
                     func.date(PageView.timestamp),
@@ -84,10 +88,10 @@ class StatsService:
                     for r in results
                 ]
             else:
-                results = db.query(
+                results = self._exclude_dashboard(db.query(
                     func.date(PageView.timestamp).label('date'),
                     func.count(PageView.id).label('views')
-                ).filter(
+                )).filter(
                     PageView.timestamp >= start_date
                 ).group_by(
                     func.date(PageView.timestamp)
@@ -105,13 +109,13 @@ class StatsService:
     def get_unique_visitors_trend(self, days: int = 7) -> List[Dict[str, Any]]:
         db = next(get_db())
         try:
-            end_date = datetime.utcnow()
+            end_date = datetime.now()
             start_date = end_date - timedelta(days=days)
             
-            results = db.query(
+            results = self._exclude_dashboard(db.query(
                 func.date(PageView.timestamp).label('date'),
                 func.count(func.distinct(PageView.session_id)).label('visitors')
-            ).filter(
+            )).filter(
                 PageView.timestamp >= start_date
             ).group_by(
                 func.date(PageView.timestamp)
@@ -129,10 +133,10 @@ class StatsService:
     def get_top_pages(self, limit: int = 10) -> List[Dict[str, Any]]:
         db = next(get_db())
         try:
-            results = db.query(
+            results = self._exclude_dashboard(db.query(
                 PageView.page_url,
                 func.count(PageView.id).label('views')
-            ).group_by(
+            )).group_by(
                 PageView.page_url
             ).order_by(
                 func.count(PageView.id).desc()
@@ -148,13 +152,13 @@ class StatsService:
     def get_hourly_distribution(self, days: int = 1) -> List[Dict[str, Any]]:
         db = next(get_db())
         try:
-            end_date = datetime.utcnow()
+            end_date = datetime.now()
             start_date = end_date - timedelta(days=days)
             
-            results = db.query(
+            results = self._exclude_dashboard(db.query(
                 func.extract('hour', PageView.timestamp).label('hour'),
                 func.count(PageView.id).label('views')
-            ).filter(
+            )).filter(
                 PageView.timestamp >= start_date
             ).group_by(
                 func.extract('hour', PageView.timestamp)

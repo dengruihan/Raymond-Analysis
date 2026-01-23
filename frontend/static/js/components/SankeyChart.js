@@ -37,6 +37,14 @@ class SankeyChart {
         this.chart && this.chart.resize();
     }
 
+    showEmptyMessage(message) {
+        if (this.chart) {
+            this.chart.dispose();
+            this.chart = null;
+        }
+        this.container.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; height: 400px; color: #999;">${message}</div>`;
+    }
+
     removeCycles(nodes, links) {
         const nodeNames = nodes.map(n => n.name);
         const nodeIndex = new Map(nodeNames.map((name, i) => [name, i]));
@@ -96,14 +104,13 @@ class SankeyChart {
         
         if (!this.data || !this.data.nodes || !this.data.links) {
             console.warn('Sankey data is invalid');
+            this.showEmptyMessage('数据无效');
             return;
         }
         
         if (this.data.nodes.length === 0) {
             console.warn('Sankey has no nodes');
-            this.chart.dispose();
-            this.container.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 400px; color: #999;">暂无数据</div>';
-            this.chart = null;
+            this.showEmptyMessage('暂无数据');
             return;
         }
         
@@ -112,9 +119,7 @@ class SankeyChart {
         
         if (filteredLinks.length === 0) {
             console.warn('Sankey has no valid links after removing cycles');
-            this.chart.dispose();
-            this.container.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 400px; color: #999;">暂无有效流转数据</div>';
-            this.chart = null;
+            this.showEmptyMessage('暂无有效流转数据');
             return;
         }
         

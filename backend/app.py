@@ -47,8 +47,22 @@ async def root():
         return f.read()
 
 @app.get("/tracker.js")
-async def tracker():
+async def tracker(site_id: str = None):
     with open("tracking/raymond-tracker.js", "r", encoding="utf-8") as f:
+        content = f.read()
+        if site_id:
+            content = content.replace(
+                "pixelUrl: config.pixelUrl || 'http://localhost:8001/api/pixel'",
+                f"pixelUrl: config.pixelUrl || 'http://localhost:5500/api/pixel?site_id={site_id}'"
+            )
+        return Response(
+            content=content,
+            media_type="application/javascript; charset=utf-8"
+        )
+
+@app.get("/ra.js")
+async def ra_simple():
+    with open("tracking/ra-simple.js", "r", encoding="utf-8") as f:
         return Response(
             content=f.read(),
             media_type="application/javascript; charset=utf-8"
@@ -62,6 +76,11 @@ async def test_page():
 @app.get("/tracker-test", response_class=HTMLResponse)
 async def tracker_test_page():
     with open("frontend/templates/tracker-test.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+@app.get("/simple-demo", response_class=HTMLResponse)
+async def simple_demo_page():
+    with open("frontend/templates/simple-demo.html", "r", encoding="utf-8") as f:
         return f.read()
 
 if __name__ == "__main__":

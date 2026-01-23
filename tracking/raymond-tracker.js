@@ -3,8 +3,10 @@
 
     var RaymondTracker = function(config) {
         this.config = config || {};
-        this.trackerUrl = config.trackerUrl || window.location.origin + '/api/track';
-        this.pixelUrl = config.pixelUrl || 'http://localhost:8001/api/pixel';
+        var script = document.querySelector('script[src*="tracker.js"], script[src*="ra.js"]');
+        var scriptOrigin = script ? new URL(script.src).origin : 'http://localhost:5500';
+        this.trackerUrl = config.trackerUrl || scriptOrigin + '/api/track';
+        this.pixelUrl = config.pixelUrl || scriptOrigin + '/api/pixel';
         this.sessionId = this.getSessionId();
         this.userId = config.userId || null;
         this.startTime = Date.now();
@@ -133,8 +135,11 @@
 
     window.RaymondTracker = RaymondTracker;
 
+    var script = document.querySelector('script[src*="tracker.js"], script[src*="ra.js"]');
+    var scriptOrigin = script ? new URL(script.src).origin : 'http://localhost:5500';
+    
     window.raymond = new RaymondTracker({
-        pixelUrl: 'http://localhost:8001/api/pixel'
+        pixelUrl: scriptOrigin + '/api/pixel'
     });
     
     if (document.readyState === 'complete') {

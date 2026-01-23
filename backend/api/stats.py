@@ -32,12 +32,6 @@ async def get_top_pages(
 ):
     return stats_service.get_top_pages(limit)
 
-@router.get("/hourly")
-async def get_hourly_distribution(
-    days: int = Query(1, ge=1, le=7, description="天数范围")
-):
-    return stats_service.get_hourly_distribution(days)
-
 @router.get("/referrers")
 async def get_referrers(
     limit: int = Query(10, ge=1, le=50, description="返回数量")

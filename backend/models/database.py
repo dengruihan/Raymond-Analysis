@@ -36,7 +36,7 @@ class PageView(Base):
     screen_height = Column(Integer, nullable=True)
     language = Column(String(10), nullable=True)
     duration = Column(Float, nullable=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=datetime.now, index=True)
     
     __table_args__ = (
         Index('idx_session_timestamp', 'session_id', 'timestamp'),
@@ -55,7 +55,7 @@ class Event(Base):
     page_url = Column(String(500))
     ip_address = Column(String(45))
     user_agent = Column(String(500))
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=datetime.now, index=True)
     
     __table_args__ = (
         Index('idx_event_type_timestamp', 'event_type', 'timestamp'),
@@ -69,7 +69,7 @@ class Session(Base):
     user_id = Column(String(100), index=True, nullable=True)
     ip_address = Column(String(45))
     user_agent = Column(String(500))
-    start_time = Column(DateTime, default=datetime.utcnow)
+    start_time = Column(DateTime, default=datetime.now)
     end_time = Column(DateTime, nullable=True)
     page_views = Column(Integer, default=1)
     duration = Column(Float, default=0.0)

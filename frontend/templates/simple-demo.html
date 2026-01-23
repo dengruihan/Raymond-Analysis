@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单追踪器示例</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .code-box {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: white;
+        }
+        .info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 简单追踪器示例</h1>
+        
+        <div class="info">
+            <strong>追踪器已加载！</strong><br>
+            查看浏览器控制台可以看到追踪日志
+        </div>
+
+        <h2>使用方法</h2>
+        <p>只需在您的网页中插入以下代码：</p>
+        <div class="code-box">
+&lt;script src="http://localhost:5500/ra.js" id="ra-tracker"&gt;&lt;/script&gt;
+        </div>
+
+        <h2>测试按钮</h2>
+        <p>点击下方按钮测试不同的追踪事件：</p>
+
+        <button class="btn-primary" onclick="ra_track('click', 'primary_button')">
+            主要按钮
+        </button>
+        
+        <button class="btn-success" onclick="ra_track('click', 'success_button')">
+            成功按钮
+        </button>
+        
+        <button class="btn-danger" onclick="ra_track('click', 'danger_button')">
+            危险按钮
+        </button>
+        
+        <button class="btn-warning" onclick="ra_track('conversion', 'purchase', {product: 'iPhone', price: 9999})">
+            购买事件
+        </button>
+
+        <h2>查看数据</h2>
+        <p>访问 <a href="http://localhost:5500" target="_blank">RA 仪表盘</a> 查看收集到的数据</p>
+    </div>
+
+    <script src="http://localhost:5500/ra.js" id="ra-tracker"></script>
+</body>
+</html>
