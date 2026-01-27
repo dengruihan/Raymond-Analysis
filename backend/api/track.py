@@ -112,7 +112,9 @@ async def track_page_view(data: PageViewData, request: Request):
         
         return {
             **result,
-            "session_id": session_id
+            "session_id": session_id,
+            "user_type": result.get("user_type", "unknown"),
+            "is_new_user": result.get("is_new_user", False)
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

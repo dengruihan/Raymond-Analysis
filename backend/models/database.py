@@ -81,6 +81,21 @@ class Session(Base):
         Index('idx_start_time', 'start_time'),
     )
 
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(100), unique=True, index=True)
+    first_visit = Column(DateTime, default=datetime.now)
+    last_visit = Column(DateTime, default=datetime.now)
+    visit_count = Column(Integer, default=1)
+    ip_address = Column(String(45), nullable=True)
+    user_agent = Column(String(500), nullable=True)
+    
+    __table_args__ = (
+        Index('idx_user_id', 'user_id'),
+    )
+
 class AggregatedStats(Base):
     __tablename__ = "aggregated_stats"
     
