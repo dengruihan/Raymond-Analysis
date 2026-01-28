@@ -53,7 +53,7 @@ async def tracker(site_id: str = None):
         if site_id:
             content = content.replace(
                 "pixelUrl: config.pixelUrl || 'http://localhost:8001/api/pixel'",
-                f"pixelUrl: config.pixelUrl || 'http://localhost:5500/api/pixel?site_id={site_id}'"
+                f"pixelUrl: config.pixelUrl || 'http://110.40.153.38:5500/api/pixel?site_id={site_id}'"
             )
         return Response(
             content=content,

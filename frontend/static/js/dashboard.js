@@ -18,6 +18,8 @@ class Dashboard {
         this.charts.hourly = echarts.init(document.getElementById('hourly-chart'));
         this.charts.devices = echarts.init(document.getElementById('devices-chart'));
         this.charts.browsers = echarts.init(document.getElementById('browsers-chart'));
+        this.charts.userType = echarts.init(document.getElementById('user-type-chart'));
+        this.charts.userTypeTrend = echarts.init(document.getElementById('user-type-trend-chart'));
         this.charts.topPages = echarts.init(document.getElementById('top-pages-chart'));
         this.charts.referrers = echarts.init(document.getElementById('referrers-chart'));
         this.charts.sankey = new SankeyChart('sankey-chart');
@@ -35,6 +37,8 @@ class Dashboard {
             this.loadHourlyDistribution(1),
             this.loadDeviceStats(),
             this.loadBrowserStats(),
+            this.loadUserTypeStats(),
+            this.loadUserTypeTrend(7),
             this.loadTopPages(),
             this.loadReferrers(),
             this.loadPageFlow()
@@ -53,6 +57,10 @@ class Dashboard {
 
         document.getElementById('hourly-time-range').addEventListener('change', (e) => {
             this.loadHourlyDistribution(parseInt(e.target.value));
+        });
+
+        document.getElementById('user-type-time-range').addEventListener('change', (e) => {
+            this.loadUserTypeTrend(parseInt(e.target.value));
         });
     }
 
@@ -290,6 +298,109 @@ class Dashboard {
         }
     }
 
+    async loadUserTypeStats() {
+        try {
+            const response = await fetch('/api/stats/user-type');
+            const data = await response.json();
+
+            const userTypeData = [
+                {
+                    value: data.new_users,
+                    name: '新用户'
+                },
+                {
+                    value: data.returning_users,
+                    name: '老用户'
+                }
+            ];
+
+            const option = {
+                title: {
+                    text: '新老用户分布',
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b}: {c} ({d}%)'
+                },
+                series: [{
+                    name: '用户类型',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 10,
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    },
+                    label: {
+                        show: true,
+                        formatter: '{b}: {d}%'
+                    },
+                    data: userTypeData,
+                    color: ['#667eea', '#764ba2']
+                }]
+            };
+
+            this.charts.userType.setOption(option);
+        } catch (error) {
+            console.error('Failed to load user type stats:', error);
+        }
+    }
+
+    async loadUserTypeTrend(days = 7) {
+        try {
+            const response = await fetch(`/api/stats/user-type/trend?days=${days}`);
+            const data = await response.json();
+
+            let titleText = '新老用户趋势';
+            if (days === 1) titleText = '24小时新老用户趋势';
+            else if (days === 2) titleText = '48小时新老用户趋势';
+            else titleText = `近${days}天新老用户趋势`;
+
+            const option = {
+                title: {
+                    text: titleText
+                },
+                tooltip: {
+                    trigger: 'axis'
+                },
+                legend: {
+                    data: ['新用户', '老用户']
+                },
+                xAxis: {
+                    type: 'category',
+                    data: data.map(d => d.date)
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [
+                    {
+                        name: '新用户',
+                        type: 'bar',
+                        data: data.map(d => d.new_users),
+                        itemStyle: {
+                            color: '#667eea'
+                        }
+                    },
+                    {
+                        name: '老用户',
+                        type: 'bar',
+                        data: data.map(d => d.returning_users),
+                        itemStyle: {
+                            color: '#764ba2'
+                        }
+                    }
+                ]
+            };
+
+            this.charts.userTypeTrend.setOption(option);
+        } catch (error) {
+            console.error('Failed to load user type trend:', error);
+        }
+    }
+
     async loadTopPages() {
         try {
             const response = await fetch('/api/stats/top-pages?limit=10');
@@ -421,6 +532,7 @@ class Dashboard {
             this.loadTopPages();
             this.loadDeviceStats();
             this.loadBrowserStats();
+            this.loadUserTypeStats();
             this.loadPageFlow();
         }, 60000);
     }

@@ -96,6 +96,24 @@
                 <div id="browsers-chart" class="chart"></div>
             </div>
 
+            <div class="chart-container">
+                <h2>新老用户分布</h2>
+                <div id="user-type-chart" class="chart"></div>
+            </div>
+
+            <div class="chart-container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 style="margin: 0;">新老用户趋势</h2>
+                    <select id="user-type-time-range" class="time-range-select">
+                        <option value="1">24小时</option>
+                        <option value="2">48小时</option>
+                        <option value="7" selected>7天</option>
+                        <option value="30">30天</option>
+                    </select>
+                </div>
+                <div id="user-type-trend-chart" class="chart"></div>
+            </div>
+
             <div class="chart-container full-width">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h2 style="margin-bottom: 0;">用户页面流转 (桑基图)</h2>

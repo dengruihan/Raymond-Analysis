@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 from sqlalchemy import func, and_
-from backend.models import PageView, Event, Session, get_db
+from backend.models import PageView, Event, Session, User, get_db
 from backend.services.cache_service import redis_service
 
 class StatsService:
@@ -357,6 +357,96 @@ class StatsService:
                 browser_name: {"count": count, "percentage": count / total * 100 if total > 0 else 0}
                 for browser_name, count in browser_stats.items()
             }
+        finally:
+            db.close()
+    
+    def get_user_type_stats(self) -> Dict[str, Any]:
+        """获取新老用户统计数据"""
+        db = next(get_db())
+        try:
+            now = datetime.now()
+            today = now.date()
+            today_start = datetime.combine(today, datetime.min.time())
+            
+            # 获取总用户数
+            total_users = db.query(func.count(User.id)).scalar() or 0
+            
+            # 获取新用户数（今天首次访问的用户）
+            new_users = db.query(func.count(User.id)).filter(
+                func.date(User.first_visit) == today
+            ).scalar() or 0
+            
+            # 获取老用户数
+            returning_users = total_users - new_users
+            
+            # 计算比例
+            new_user_percentage = (new_users / total_users * 100) if total_users > 0 else 0
+            returning_user_percentage = (returning_users / total_users * 100) if total_users > 0 else 0
+            
+            return {
+                "total_users": total_users,
+                "new_users": new_users,
+                "returning_users": returning_users,
+                "new_user_percentage": new_user_percentage,
+                "returning_user_percentage": returning_user_percentage
+            }
+        finally:
+            db.close()
+    
+    def get_user_type_trend(self, days: int = 7) -> List[Dict[str, Any]]:
+        """获取新老用户趋势数据"""
+        db = next(get_db())
+        try:
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=days)
+            
+            # 生成日期范围
+            date_range = []
+            current_date = start_date
+            while current_date <= end_date:
+                date_range.append(current_date)
+                current_date += timedelta(days=1)
+            
+            # 获取每天的新用户数
+            daily_new_users = db.query(
+                func.date(User.first_visit).label('date'),
+                func.count(User.id).label('new_users')
+            ).filter(
+                User.first_visit >= start_date
+            ).group_by(
+                func.date(User.first_visit)
+            ).all()
+            
+            # 获取每天的活跃用户数（包含新老用户）
+            daily_active_users = self._exclude_dashboard(db.query(
+                func.date(PageView.timestamp).label('date'),
+                func.count(func.distinct(PageView.user_id)).label('active_users')
+            )).filter(
+                PageView.timestamp >= start_date,
+                PageView.user_id.isnot(None)
+            ).group_by(
+                func.date(PageView.timestamp)
+            ).all()
+            
+            # 构建结果
+            new_users_map = {str(r.date): r.new_users for r in daily_new_users}
+            active_users_map = {str(r.date): r.active_users for r in daily_active_users}
+            
+            trend_data = []
+            for date in date_range:
+                date_str = str(date.date())
+                new_users = new_users_map.get(date_str, 0)
+                active_users = active_users_map.get(date_str, 0)
+                returning_users = max(0, active_users - new_users)
+                
+                trend_data.append({
+                    "date": date_str,
+                    "new_users": new_users,
+                    "returning_users": returning_users,
+                    "total_active": active_users
+                })
+            
+            return trend_data
         finally:
             db.close()
 

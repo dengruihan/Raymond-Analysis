@@ -52,3 +52,15 @@ async def get_event_stats(
     days: int = Query(7, ge=1, le=30, description="天数范围")
 ):
     return stats_service.get_event_stats(event_type, days)
+
+@router.get("/user-type")
+async def get_user_type_stats():
+    """获取新老用户统计数据"""
+    return stats_service.get_user_type_stats()
+
+@router.get("/user-type/trend")
+async def get_user_type_trend(
+    days: int = Query(7, ge=1, le=30, description="天数范围")
+):
+    """获取新老用户趋势数据"""
+    return stats_service.get_user_type_trend(days)

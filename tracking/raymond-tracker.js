@@ -72,7 +72,20 @@
             this.trackPageView();
         },
 
+        isRASite: function() {
+            const hostname = window.location.hostname;
+            const pathname = window.location.pathname;
+            // 检查是否是RA自己的网站
+            return hostname === 'localhost' && (pathname === '/' || pathname.startsWith('/static/') || pathname.startsWith('/api/') || pathname.startsWith('/tracker.js') || pathname.startsWith('/ra.js'));
+        },
+
         trackPageView: function() {
+            // 跳过RA自己网站的数据统计
+            if (this.isRASite()) {
+                console.log('[RA] Skipping tracking for RA site itself');
+                return;
+            }
+            
             const data = {
                 type: 'pageview',
                 page_url: window.location.href,
@@ -88,6 +101,12 @@
         },
 
         trackEvent: function(eventType, eventName, properties) {
+            // 跳过RA自己网站的事件跟踪
+            if (this.isRASite()) {
+                console.log('[RA] Skipping event tracking for RA site itself');
+                return;
+            }
+            
             const data = {
                 type: 'event',
                 event_type: eventType,
